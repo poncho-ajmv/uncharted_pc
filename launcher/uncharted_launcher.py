@@ -100,6 +100,7 @@ FRAME_GENERATION = [('off', 'Off'), ('fsr3', 'AMD FSR 3 Frame Generation (any GP
                     ('dlss', 'NVIDIA DLSS Frame Generation (GeForce RTX 40/50)')]
 BUTTON_PROMPTS = [('auto', 'Automatic (follows the device you used last)'),
                   ('keyboard', 'Keyboard and mouse keys'), ('xbox', 'Xbox buttons'),
+                  ('nintendo', 'Nintendo buttons'), ('gamecube', 'GameCube buttons'),
                   ('0', "PlayStation buttons (the game's own)")]
 CONTROLLER_PROFILES = [('auto', 'Automatic'), ('playstation', 'PlayStation'), ('xbox', 'Xbox'),
                        ('nintendo', 'Nintendo'), ('gamecube', 'Nintendo GameCube'),
@@ -2098,9 +2099,10 @@ class Launcher:
 
     def update_prompt_preview(self):
         style=self.var('button_prompts').get()
-        samples={'0':'✕   ○   △   ▢','xbox':'A   B   Y   X',
+        samples={'0':'✕   ○   △   ▢','xbox':'A   B   Y   X','nintendo':'B   A   X   Y',
+                 'gamecube':'A   X   Y   B',
                  'keyboard':'  '.join(self.key_list(a)[0] or '—' for a in ('cross','circle','triangle','square'))}
-        self.prompt_preview.configure(text=samples.get(style,'✕  ○  △  ▢     /     A  B  Y  X'))
+        self.prompt_preview.configure(text=samples.get(style,'✕  ○  △  ▢     /     A  B  Y  X     /     B  A  X  Y'))
         self.prompt_preview_note.configure(text=_('Automatic follows the device used last. Manual choices keep one button style.')
             if style=='auto' else _('The chosen icon style stays fixed; assignments stay unchanged.'))
 

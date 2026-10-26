@@ -1,10 +1,9 @@
-# Keyboard, mouse and Xbox button prompts
-
+# Keyboard, mouse and controller button prompts
 The games only know PlayStation buttons. This port redraws their button pictures as the keys and
 mouse buttons bound in `input.ini` while the keyboard or mouse was used last, as Xbox buttons after
-input from an Xbox (or any other non-PlayStation) controller, and gives the game's own pictures
-back after PlayStation controller input. It also makes the bindings follow the keyboard layout.
-
+input from an Xbox or generic controller, as Nintendo buttons after Nintendo controller input,
+and gives the game's own pictures back after PlayStation controller input. Keyboard bindings
+follow the keyboard layout.
 | | |
 |---|---|
 | ![U3 title: Press SPACE](screenshots/keyboard-prompts-u3-title.webp) | ![U1: mouse buttons to aim and shoot](screenshots/keyboard-prompts-u1-mouse-aim-shoot.webp) |
@@ -101,8 +100,10 @@ Still in the launcher: keys whose Tk keysym is not a plain letter or digit (AZER
 | Variable | Effect |
 |---|---|
 | `BB_BUTTON_PROMPTS=0` | keep the PlayStation buttons (also `off`, `playstation`) |
-| `BB_BUTTON_PROMPTS=keyboard` / `xbox` | always show that style (default `auto`: the device used last); the launcher's Controls page has the same choice |
-| `BB_BUTTON_PROMPTS_FILE=<path>` | the first word of that file (`ps`, `xbox`, `keyboard`) is the device used last, read twice a second: switching in runs without a controller (scripted runs ignore the real one) |
+| `BB_BUTTON_PROMPTS=keyboard` / `xbox` / `nintendo` / `gamecube` | always show that style (default `auto`: the device used last); the launcher's Controllers page has the same choice |
+| `BB_BUTTON_PROMPTS_FILE=<path>` | the first word of that file (`ps`, `xbox`, `nintendo`, `gamecube`, `keyboard`) is the device used last, read twice a second: switching in runs without a controller (scripted runs ignore the real one) |
+| `BB_PAD_DEVICE=<id>` | open the controller selected on the launcher's Controllers page (`auto` keeps the first available controller) |
+| `BB_PAD_PROFILE=auto` / `playstation` / `xbox` / `nintendo` / `gamecube` / `steam` / `generic` | use SDL detection or override the controller family used for button prompts |
 | `BB_ICON_COLLECT=1` | save every picture sampled by a pass that draws to the display to `user/button_icons/<hash>_<w>x<h>_<format>.dds` (uncompressed slots at most 4 times: a sheet can be empty at first) |
 | `BB_TEXTURE_DUMP=1` | F10 saves every texture of the next frame and the pass list to `user/texture_dump/<time>/` |
 
@@ -138,7 +139,7 @@ The two tools are for development and off by default.
 The Controllers page separates the physical illustration from the runtime button-prompt
 profile. Automatic illustrations distinguish SDL PS3/PS4/PS5 types, Xbox and Switch Pro.
 GameCube is detected by SDL's `gamecube` type, with its own manual profile, illustration
-and physical button labels. Its SDL face order is A/X/B/Y, distinct from
+and `BB_BUTTON_PROMPTS=gamecube` style. Its SDL face order is A/X/B/Y, distinct from
 Switch's B/A/Y/X. L/R are trigger axes, Z is the right shoulder, and Start is the menu
 button. Trigger clicks can be assigned as `misc3`/`misc4` when the adapter exposes them.
 The illustration includes a small optional L1 below L for third-party variants;
@@ -195,8 +196,3 @@ choices do not bypass those drivers or expose missing controls.
 
 The controller workflow has localized labels in all launcher languages. Prompt styles describe
 the default positional layout; custom controller bindings do not redraw each prompt to its new source.
-
-Nintendo and GameCube currently use Xbox-style in-game icons. Dedicated styles are
-introduced by the complementary button-prompts PR; their physical diagrams and mappings
-are already available here. `BB_PAD_DEVICE` selects a reported connection key, and
-`BB_PAD_PROFILE` overrides the family without inventing device capabilities.

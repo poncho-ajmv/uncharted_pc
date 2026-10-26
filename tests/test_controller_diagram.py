@@ -214,7 +214,7 @@ class ControllerDiagramTests(unittest.TestCase):
             ui.var('game_dir').set('keep-game')
             ui.var('controller_model').set('steam_deck')
             ui.var('pad_mapping_mode').set('custom')
-            ui.var('button_prompts').set('xbox')
+            ui.var('button_prompts').set('nintendo')
             ui.var('pad_vibration').set(False)
             ui.var('pad_vibration_strength').set('35')
             ui.pad_vars['cross'].set('a|paddle2')
@@ -235,7 +235,7 @@ class ControllerDiagramTests(unittest.TestCase):
             self.assertEqual(ui.var('game_dir').get(),'keep-game')
             self.assertFalse(ui.var('pad_vibration').get())
             self.assertEqual(ui.var('pad_vibration_strength').get(),'35')
-            self.assertEqual(ui.var('button_prompts').get(),'xbox')
+            self.assertEqual(ui.var('button_prompts').get(),'nintendo')
             self.assertIn('paddle2',ui.controller_diagram.visible_controls)
             self.assertEqual(len(launcher.read_controller_presets()),2)
             with mock.patch.object(ui,'controller_dialog',return_value=False):
@@ -310,7 +310,7 @@ class ControllerDiagramTests(unittest.TestCase):
         self.assertEqual(ui.pad_vars['cross'].get(),'a|paddle2')
         self.assertEqual(len([w for w in self.root.winfo_children() if isinstance(w,tk.Toplevel)]),0)
         bindings={a:v.get() for a,v in ui.pad_vars.items()}
-        for style in ('0','xbox','keyboard','auto'):
+        for style in ('0','xbox','nintendo','keyboard','auto'):
             ui.var('button_prompts').set(style)
             ui.update_prompt_preview()
             self.assertEqual({a:v.get() for a,v in ui.pad_vars.items()},bindings)

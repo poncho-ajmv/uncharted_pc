@@ -32,7 +32,7 @@ class InputConfigTests(unittest.TestCase):
         settings = {'controller_id':'device-a','game_dir':'keep-game','key_bindings':{'cross':'Z'},
                     'controller_model':'steam_deck','pad_mapping_mode':'recommended',
                     'pad_bindings':{'cross':'a|paddle2'},'pad_vibration':False,
-                    'pad_vibration_strength':'35','pad_invert_y':True,'button_prompts':'xbox'}
+                    'pad_vibration_strength':'35','pad_invert_y':True,'button_prompts':'nintendo'}
         profile = LAUNCHER.controller_preset(settings)
         for excluded in ('controller_id','game_dir','key_bindings'):
             self.assertNotIn(excluded,profile)
@@ -103,10 +103,10 @@ class InputConfigTests(unittest.TestCase):
         labels=dict(LAUNCHER.pad_button_options('gamecube'))
         self.assertEqual([labels[k] for k in ('a','b','x','y')],['A','X','B','Y'])
         self.assertEqual([labels[k] for k in ('lefttrigger','righttrigger','rightshoulder')],['L','R','Z'])
-        settings={'controller_profile':'gamecube','controller_model':'gamecube','button_prompts':'xbox',
+        settings={'controller_profile':'gamecube','controller_model':'gamecube','button_prompts':'gamecube',
                   'pad_mapping_mode':'custom','pad_bindings':{'l1':'misc3','touchpad':'start'}}
         self.assertEqual(LAUNCHER.controller_preset(settings)['controller_model'],'gamecube')
-        self.assertEqual(LAUNCHER.controller_preset(settings)['button_prompts'],'xbox')
+        self.assertEqual(LAUNCHER.controller_preset(settings)['button_prompts'],'gamecube')
         pad={'type':'gamecube','profile':'gamecube','buttons':['a','b','x','y','start','rightshoulder'],
              'axes':['lefttrigger','righttrigger']}
         self.assertNotIn('leftstick',LAUNCHER.available_pad_buttons(pad))

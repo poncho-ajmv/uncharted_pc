@@ -885,12 +885,18 @@ const RuntimeGuestCallback *runtime_guest_callbacks(size_t *count) {
     return guest_callbacks;
 }
 
-/* Use the shared family classifier; Nintendo prompt rendering is added separately. */
+/* Button pictures: 1 PlayStation, 2 Xbox/generic, 3 Switch, 4 GameCube. */
 static int prompts_pad_device(SDL_Gamepad *g) {
     const char *forced=getenv("BB_PAD_PROFILE");
-    if (forced && *forced && strcmp(forced,"auto"))
-        return !strcmp(forced,"playstation") ? 1 : 2;
-    return controller_profile(g)==PROFILE_PLAYSTATION ? 1 : 2;
+    if (forced && *forced && strcmp(forced,"auto")) {
+        if (!strcmp(forced,"playstation")) return 1;
+        if (!strcmp(forced,"nintendo")) return 3;
+        if (!strcmp(forced,"gamecube")) return 4;
+        return 2;
+    }
+    const enum ControllerProfile profile=controller_profile(g);
+    return profile==PROFILE_PLAYSTATION ? 1 : profile==PROFILE_NINTENDO ? 3 :
+           profile==PROFILE_GAMECUBE ? 4 : 2;
 }
 
 static void sample_host(PadData *d) {

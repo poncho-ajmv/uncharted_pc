@@ -224,9 +224,9 @@ int main(void) {
     assert(SDL_GetGamepadButtonLabel(gamepad,SDL_GAMEPAD_BUTTON_WEST)==SDL_GAMEPAD_BUTTON_LABEL_B);
     assert(SDL_GetGamepadButtonLabel(gamepad,SDL_GAMEPAD_BUTTON_NORTH)==SDL_GAMEPAD_BUTTON_LABEL_Y);
     set_env("BB_PAD_PROFILE","auto");
-    assert(prompts_pad_device(gamepad)==2);
+    assert(prompts_pad_device(gamepad)==4);
     set_env("BB_PAD_PROFILE","gamecube");
-    assert(prompts_pad_device(NULL)==2);
+    assert(prompts_pad_device(NULL)==4);
     set_env("BB_PAD_PROFILE","auto");
     assert(!SDL_GamepadHasButton(gamepad,SDL_GAMEPAD_BUTTON_LEFT_STICK));
     assert(!SDL_GamepadHasButton(gamepad,SDL_GAMEPAD_BUTTON_BACK));

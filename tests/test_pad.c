@@ -56,7 +56,7 @@ int main(void) {
     fd=mkstemp(config);
     assert(fd>=0);
     close(fd);
-    inject(config,"pad_vibration=0\npad_vibration_strength=50\npad.cross=a\n");
+    inject(config,"pad_vibration=0\npad_vibration_strength=50\npad.cross=a|paddle2\n");
     set_env("BB_PAD_FILE",path);
     set_env("BB_PAD_HOST","1");
     set_env("BB_INPUT_CONFIG",config);
@@ -85,7 +85,7 @@ int main(void) {
     assert(pad_read_state(1,&data)==0);
     assert(input.pad_vibration==0);
     assert(input.pad_vibration_strength==50);
-    assert(input.pad[0]==SDL_GAMEPAD_BUTTON_SOUTH);
+    assert(input.pad[0][0]==SDL_GAMEPAD_BUTTON_SOUTH && input.pad[0][1]==SDL_GAMEPAD_BUTTON_LEFT_PADDLE1);
     assert((data.buttons & (BTN_CROSS|BTN_L3|BTN_TOUCHPAD))==(BTN_CROSS|BTN_L3|BTN_TOUCHPAD));
     assert(data.touch_count==1 && data.touches[0].x==480 && data.touches[0].y==471);
     inject(path,"touchpad_right");
@@ -146,9 +146,48 @@ int main(void) {
     SDL_UpdateJoysticks();
     SDL_UpdateGamepads();
     assert(pad_read_state(1,&data)==0 && data.touch_count==1 && data.touches[0].x==480);
+    /* A rear button supplements the face button; releasing either keeps the other held. */
     assert(SDL_SetJoystickVirtualButton(joystick,SDL_GAMEPAD_BUTTON_TOUCHPAD,false));
     SDL_UpdateJoysticks(); SDL_UpdateGamepads();
+    /* Release the overlay's held-button guard before starting a new input sequence. */
     assert(pad_read_state(1,&data)==0 && data.buttons==0);
+    set_pad(0,"a|paddle2");
+    assert(SDL_SetJoystickVirtualButton(joystick,SDL_GAMEPAD_BUTTON_SOUTH,true));
+    assert(SDL_SetJoystickVirtualButton(joystick,SDL_GAMEPAD_BUTTON_LEFT_PADDLE1,true));
+    SDL_UpdateJoysticks(); SDL_UpdateGamepads();
+    assert(pad_read_state(1,&data)==0 && (data.buttons & BTN_CROSS));
+    assert(SDL_SetJoystickVirtualButton(joystick,SDL_GAMEPAD_BUTTON_SOUTH,false));
+    SDL_UpdateJoysticks(); SDL_UpdateGamepads();
+    assert(pad_read_state(1,&data)==0 && (data.buttons & BTN_CROSS));
+    assert(SDL_SetJoystickVirtualButton(joystick,SDL_GAMEPAD_BUTTON_LEFT_PADDLE1,false));
+    SDL_UpdateJoysticks(); SDL_UpdateGamepads();
+    assert(pad_read_state(1,&data)==0 && !(data.buttons & BTN_CROSS));
+    /* Explicit remapping must suppress the legacy touchpad-click passthrough. */
+    set_pad(0,"touchpad");
+    configure_native_touchpad();
+    assert(!input.native_touchpad);
+    assert(SDL_SetJoystickVirtualButton(joystick,SDL_GAMEPAD_BUTTON_TOUCHPAD,true));
+    SDL_UpdateJoysticks(); SDL_UpdateGamepads();
+    assert(pad_read_state(1,&data)==0 && (data.buttons & BTN_CROSS) && !(data.buttons & BTN_TOUCHPAD));
+    set_pad(0,"a"); set_pad(11,"back|lefttrigger"); configure_native_touchpad();
+    assert(!input.native_touchpad);
+    set_pad(11,"back"); configure_native_touchpad();
+    assert(input.native_touchpad);
+    /* A secondary digital trigger wins over an analog source in either slot order. */
+    assert(SDL_SetJoystickVirtualButton(joystick,SDL_GAMEPAD_BUTTON_TOUCHPAD,false));
+    assert(SDL_SetJoystickVirtualButton(joystick,SDL_GAMEPAD_BUTTON_LEFT_PADDLE1,true));
+    assert(SDL_SetJoystickVirtualAxis(joystick,SDL_GAMEPAD_AXIS_LEFT_TRIGGER,0));
+    set_pad(6,"lefttrigger|paddle2");
+    SDL_UpdateJoysticks(); SDL_UpdateGamepads();
+    assert(pad_read_state(1,&data)==0 && data.l2==255 && (data.buttons & BTN_L2));
+    set_pad(6,"paddle2|lefttrigger");
+    assert(pad_read_state(1,&data)==0 && data.l2==255);
+    assert(SDL_SetJoystickVirtualButton(joystick,SDL_GAMEPAD_BUTTON_LEFT_PADDLE1,false));
+    assert(SDL_SetJoystickVirtualAxis(joystick,SDL_GAMEPAD_AXIS_LEFT_TRIGGER,-32768));
+    SDL_UpdateJoysticks(); SDL_UpdateGamepads();
+    assert(pad_read_state(1,&data)==0 && data.l2==0 && !(data.buttons & BTN_L2));
+    set_pad(0,"a|invalid");
+    assert(input.pad[0][0]==SDL_GAMEPAD_BUTTON_SOUTH && input.pad[0][1]==-1);
     /* The launcher's live test reports physical buttons independently of game mappings. */
     assert(SDL_SetJoystickVirtualButton(joystick,SDL_GAMEPAD_BUTTON_SOUTH,true));
     assert(SDL_SetJoystickVirtualButton(joystick,SDL_GAMEPAD_BUTTON_LEFT_PADDLE1,true));
@@ -193,7 +232,7 @@ int main(void) {
     assert(!SDL_GamepadHasButton(gamepad,SDL_GAMEPAD_BUTTON_BACK));
     const uint32_t face_actions[]={BTN_CROSS,BTN_CIRCLE,BTN_SQUARE,BTN_TRIANGLE};
     for (int button=0;button<4;++button) {
-        input.pad[button]=parse_pad((const char *[]) {"a","b","x","y"}[button]);
+        set_pad(button,(const char *[]) {"a","b","x","y"}[button]);
         assert(SDL_SetJoystickVirtualButton(joystick,button,true));
         SDL_UpdateJoysticks(); SDL_UpdateGamepads();
         assert(pad_read_state(1,&data)==0 && data.buttons==face_actions[button]);

@@ -196,7 +196,8 @@ static const Action actions[ACTIONS]={
 #define PAD_TRIGGER_RIGHT (-3)
 static struct {
     Bind keys[ACTIONS][2];
-    int pad[16];               /* SDL_GamepadButton, PAD_TRIGGER_*, or -1 */
+    int pad[16][2];            /* Primary and secondary SDL buttons/axes, or -1. */
+    int native_touchpad;
     int mouse_look, mouse_invert_y, pad_invert_y, pad_vibration, pad_vibration_strength;
     float mouse_sensitivity;
 } input;
@@ -241,10 +242,26 @@ static int parse_pad(const char *value) {
     const SDL_GamepadButton button=SDL_GetGamepadButtonFromString(value);
     return button==SDL_GAMEPAD_BUTTON_INVALID ? -1 : (int)button;
 }
+static void set_pad(int action, const char *value) {
+    char text[128];
+    snprintf(text,sizeof(text),"%s",value);
+    char *second=strchr(text,'|');
+    if (second) *second++=0;
+    input.pad[action][0]=parse_pad(text);
+    input.pad[action][1]=second ? parse_pad(second) : -1;
+}
+
+static void configure_native_touchpad(void) {
+    /* Keep the native click for the default Back binding, but never bypass a remap. */
+    input.native_touchpad=input.pad[11][0]==SDL_GAMEPAD_BUTTON_BACK && input.pad[11][1]==-1;
+    for (int a=0;a<16;++a)
+        for (int slot=0;slot<2;++slot)
+            if (input.pad[a][slot]==SDL_GAMEPAD_BUTTON_TOUCHPAD) input.native_touchpad=0;
+}
 static void load_input(void) {
     for (int a=0;a<ACTIONS;++a) {
         set_keys(a,actions[a].keys);
-        if (a<16) input.pad[a]=parse_pad(actions[a].pad);
+        if (a<16) set_pad(a,actions[a].pad);
     }
     input.mouse_look=1; input.mouse_sensitivity=1.0f;
     input.pad_vibration=1; input.pad_vibration_strength=100;
@@ -266,13 +283,14 @@ static void load_input(void) {
             else if (!strcmp(key,"pad_vibration_strength")) input.pad_vibration_strength=atoi(value);
             else for (int a=0;a<ACTIONS;++a) {
                 if (!strncmp(key,"key.",4) && !strcmp(key+4,actions[a].name)) set_keys(a,value);
-                else if (a<16 && !strncmp(key,"pad.",4) && !strcmp(key+4,actions[a].name)) input.pad[a]=parse_pad(value);
+                else if (a<16 && !strncmp(key,"pad.",4) && !strcmp(key+4,actions[a].name)) set_pad(a,value);
             }
         }
         fclose(f);
         printf("Runtime: controls from %s (mouse look %s, sensitivity %.2f)\n",path,
                input.mouse_look ? "on" : "off",input.mouse_sensitivity);
     }
+    configure_native_touchpad();
     if (input.mouse_sensitivity<=0.0f) input.mouse_sensitivity=1.0f;
     if (input.pad_vibration_strength<0) input.pad_vibration_strength=0;
     if (input.pad_vibration_strength>100) input.pad_vibration_strength=100;
@@ -903,9 +921,13 @@ static void sample_host(PadData *d) {
     static int layout_logged;
     if (k && !layout_logged) { layout_logged=1; log_layout_keys(); }
     if (g) {
-        for (int a=0;a<16;++a) {
-            const int b=input.pad[a];
-            if (b>=0 && SDL_GetGamepadButton(g,(SDL_GamepadButton)b)) d->buttons|=actions[a].ps;
+        for (int a=0;a<16;++a) for (int slot=0;slot<2;++slot) {
+            const int b=input.pad[a][slot];
+            if (b>=0 && SDL_GetGamepadButton(g,(SDL_GamepadButton)b)) {
+                d->buttons|=actions[a].ps;
+                if (actions[a].ps==BTN_L2) d->l2=255;
+                if (actions[a].ps==BTN_R2) d->r2=255;
+            }
             else if (b==PAD_TRIGGER_LEFT || b==PAD_TRIGGER_RIGHT) {
                 const uint8_t v=trigger(SDL_GetGamepadAxis(g,b==PAD_TRIGGER_LEFT ? SDL_GAMEPAD_AXIS_LEFT_TRIGGER
                                                                               : SDL_GAMEPAD_AXIS_RIGHT_TRIGGER));
@@ -914,7 +936,8 @@ static void sample_host(PadData *d) {
                 if (actions[a].ps==BTN_R2 && v>d->r2) d->r2=v;
             }
         }
-        if (SDL_GetGamepadButton(g,SDL_GAMEPAD_BUTTON_TOUCHPAD)) d->buttons|=BTN_TOUCHPAD; /* DualSense/DS4 click */
+        if (input.native_touchpad && SDL_GetGamepadButton(g,SDL_GAMEPAD_BUTTON_TOUCHPAD))
+            d->buttons|=BTN_TOUCHPAD;
         if ((d->buttons & BTN_L2) && !d->l2) d->l2=255;
         if ((d->buttons & BTN_R2) && !d->r2) d->r2=255;
         d->left_x=axis(SDL_GetGamepadAxis(g,SDL_GAMEPAD_AXIS_LEFTX)); d->left_y=axis(SDL_GetGamepadAxis(g,SDL_GAMEPAD_AXIS_LEFTY));
